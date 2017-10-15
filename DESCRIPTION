@@ -1,0 +1,13 @@
+Package: sidedata
+Title: SIDE Data in R
+Version: 0.0.0.9000
+Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Description: This package provides easy access to the Spatially Imputed Data on Ethnicity (SIDE) published by Carl Müller-Crepon and Philipp Hunziker in 201X. Please cite and refer for details to the publication: Müller-Crepon, C. & Hunziker, P. (201X). New Spatial Data on Ethnicity: Introducing SIDE. Journal of Peace Research, forthcoming
+Depends: R (>= 3.4.1)
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
+Imports: 
+    raster,
+    utils
