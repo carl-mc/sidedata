@@ -6,8 +6,7 @@
 \usage{
 side_load(sideid = c(), mapid = NULL, country = NULL, year = NULL,
   dhs.round = NULL, dhs.subround = NULL, groupname = c(), marker = c(),
-  source.dir = getwd(), conv.hull = FALSE,
-  side.metadata.df = side_metadata())
+  source.dir = getwd(), conv.hull = FALSE)
 }
 \arguments{
 \item{sideid}{Vector of sideid.}
@@ -29,8 +28,6 @@ side_load(sideid = c(), mapid = NULL, country = NULL, year = NULL,
 \item{source.dir}{Directory in which SIDE data is stored}
 
 \item{conv.hull}{Download convex hull of DHS points used for interpolation?}
-
-\item{side.metadata.df}{Meta data set of SIDE, results from `side_metadata()`. You can speed up things a little bit, if you load that only once.}
 }
 \description{
 Facilitates the loading of SIDE data.

@@ -4,13 +4,13 @@
 \alias{sidemap2data}
 \title{Query SIDE meta-data matching a set of SIDE maps}
 \usage{
-sidemap2data(side.raster, side.metadata.df = side_metadata())
+sidemap2data(side.raster)
 }
 \arguments{
 \item{side.raster}{any `raster*` object named with existing sideid(s)}
-
-\item{side.metadata.df}{Meta data set of SIDE, results from `side_metadata()`. 
-You can speed up things a little bit, if you load that only once.}
+}
+\value{
+data.frame with the metadata for the bands of sider.raster.
 }
 \description{
 Function to query SIDE metadata that matches a named SIDE raster

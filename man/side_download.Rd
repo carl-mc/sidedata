@@ -6,8 +6,7 @@
 \usage{
 side_download(sideid = c(), mapid = c(), country = c(), year = c(),
   dhs.round = c(), dhs.subround = c(), groupname = c(), marker = c(),
-  dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE,
-  side.metadata.df = side_metadata())
+  dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE)
 }
 \arguments{
 \item{sideid}{Vector of sideid as listed in `side_metadata()`.}
@@ -31,8 +30,6 @@ side_download(sideid = c(), mapid = c(), country = c(), year = c(),
 \item{overwrite}{Overwrite existing SIDE Data}
 
 \item{conv.hull}{Download convex hull of DHS points used for interpolation?}
-
-\item{side.metadata.df}{Meta data set of SIDE, results from `side_metadata()`. You can speed up things a little bit, if you load that only once.}
 }
 \description{
 Facilitates bulk-download of SIDE data from \url{icr.ethz.ch/side}.
