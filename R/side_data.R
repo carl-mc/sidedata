@@ -1,10 +1,10 @@
 #' @title SIDE Data Package
 #' @description Facilitates access to the SIDE data.
 #' 
-#' @seealso \url{url-to-paper}; \url{https://github.com/carl-mc/side_data}, \url{icr.ethz.ch/side}
+#' @seealso \url{url-to-paper}; \url{https://github.com/carl-mc/sidedata}, \url{icr.ethz.ch/data/side}
 #'
 #' @author Carl Müller-Crepon and Philipp Hunziker
-#' @name side_data
+#' @name sidedata
 #' @docType package
 #' @import
 #' raster
@@ -20,10 +20,8 @@
 
 #' @title Load SIDE metadata
 #' @description Function to load meta data of the SIDE data set
-#' @param path Specify path. Default refers to csv file located in package directory.
-side_metadata <- function(path = "package/extdata/side_metadata.csv"){
-  path <- ifelse(!is.null(path),path,system.file("extdata", "side_metadata.csv", package = "sidedata"))
-  return(read.csv(file = path, header = T, stringsAsFactors = F))
+side_metadata <- function(){
+  return(sidedata::side.metadata.df)
 }
 
 #' @title Load codebook for SIDE meta data
@@ -48,23 +46,22 @@ side_metadata_codebook <- function(){
 #' @param dest.dir Destination directory. If `conv.hull = TRUE`, a subdirectory `dest.dir/conv_hull/` will be created in which raster files of the convex hulls are saved. 
 #' @param overwrite Overwrite existing SIDE Data
 #' @param conv.hull Download convex hull of DHS points used for interpolation?
-#' @param side.metadata.df Meta data set of SIDE, results from `side_metadata()`. You can speed up things a little bit, if you load that only once.
 #' 
 #' @details Specify the subset of SIDE maps you want to download using the above parameters. 
 #' The inner join of all parameters determines which maps are downloaded.
 #' 
 side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(), 
                           dhs.round = c(), dhs.subround = c(), groupname = c(), marker = c(),
-                          dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE, side.metadata.df = side_metadata()){
+                          dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE){
   # Server url
-  server.url <- "icr.ethz.ch:/side/side_v1/"
+  server.url <- "icr.ethz.ch/data/side/raw/v1/"
   
   # Destination directory
   dest.dir <- ifelse(substr(dest.dir, nchar(dest.dir),nchar(dest.dir)) == "/",
                      substr(dest.dir, 1,nchar(dest.dir)-1), dest.dir)
   
   # Metadata
-  side.metadata.df <- side_metadata()
+  side.metadata.df <- sidedata::side.metadata.df
   
   # Subset
   subset.ls <- list(sideid = sideid,  mapid = mapid,
@@ -90,27 +87,50 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     }
   } else {
     exist <- exist[exist %in% side.metadata.df$path]
-    print("Overwriting ",paste0(length(exist)," files..."))
+    print(paste0("Overwriting ",length(exist)," files..."))
   }
   
   # Print number of downloads:
-  print(paste0("Downloading ", nrow(side.metadata.df), " SIDE maps"))
+  if(nrow(side.metadata.df) == 0){
+    print("No files to download.")
+    return(FALSE)
+  }
+  print(paste0("Downloading ", nrow(side.metadata.df), " SIDE maps from icr.ethz.ch/data/side/raw/v1/"))
+  
+  # Make Progress Bar
+  pb <- txtProgressBar(min = 0, max = length(side.metadata.df$path), style = 3)
   
   # Download
-  lapply(side.metadata.df$path, function(f){
-    download.file(url = paste0(server.url, f),
-                  destfile = paste0(dest.dir,"/", f))
+  res <- lapply(1:length(side.metadata.df$path), function(f){
+    r <- download.file(url = paste0(server.url, side.metadata.df$path[f]),
+                  destfile = paste0(dest.dir,"/", side.metadata.df$path[f]),
+                  quiet = T)
+    setTxtProgressBar(pb, f)
+    return(r)
   })
+  
+  # Close progress bar
+  close(pb)
   
   # Download convex hull
   if(conv.hull){
-    print(paste0("Downloading ",length(unique(side.metadata.df$mapid))," convex hull(s)"))
+    print(paste0("Downloading ",length(unique(side.metadata.df$mapid))," convex hull(s) from icr.ethz.ch/data/side/raw/v1/conv_hull/"))
+    
+    # Make Progress Bar
+    pb <- txtProgressBar(min = 0, max = length(unique(side.metadata.df$mapid)), style = 3)
+    
+    # Download
     dir.create(paste0(dest.dir,"/conv_hull"))
     conv.hull.stub <- "conv_hull/side_v1_convhull_"
-    lapply(unique(side.metadata.df$mapid), function(f){
-      download.file(url = paste0(server.url,conv.hull.stub, f, ".asc"),
-                    destfile = paste0(dest.dir,conv.hull.stub,"/", f, ".asc"))
+    res <- lapply(1:length(unique(side.metadata.df$mapid)), function(f){
+      download.file(url = paste0(server.url,conv.hull.stub, unique(side.metadata.df$mapid)[f], ".asc"),
+                    destfile = paste0(dest.dir,conv.hull.stub,"/", unique(side.metadata.df$mapid)[f], ".asc"))
+      setTxtProgressBar(pb, f)
+      return(r)
     })
+    
+    # Close progress bar
+    close(pb)
   }
   
   # Return
@@ -132,7 +152,6 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
 #' @param marker Type of group; one of `c("ethnic","religion","ethnic.religion")`
 #' @param source.dir Directory in which SIDE data is stored
 #' @param conv.hull Download convex hull of DHS points used for interpolation?
-#' @param side.metadata.df Meta data set of SIDE, results from `side_metadata()`. You can speed up things a little bit, if you load that only once.
 #' 
 #' @details Specify the subset of SIDE maps you want to load using the above parameters. 
 #' To guarantee that maps form a raster-stack, parameters 
@@ -141,9 +160,12 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
 #' 
 side_load <- function(sideid = c(), mapid = NULL, country = NULL, 
                       year = NULL, dhs.round = NULL, dhs.subround = NULL, groupname = c(), marker = c(),
-                      source.dir = getwd(), conv.hull = FALSE, side.metadata.df = side_metadata()){
+                      source.dir = getwd(), conv.hull = FALSE){
   # Need the raster package here..
   require(raster)
+  
+  # Load Metadata
+  side.metadata.df <- sidedata::side.metadata.df
   
   # Source directory
   source.dir <- ifelse(substr(source.dir, nchar(source.dir),nchar(source.dir)) == "/",
@@ -183,7 +205,6 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
     }
     
     # Load
-    print(paste0(source.dir,"/",side.metadata.df$path))
     stack <- stack(paste0(source.dir,"/",side.metadata.df$path))
     
     # Name stack
@@ -207,13 +228,16 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
 #' @title Query SIDE meta-data matching a set of SIDE maps
 #'
 #' @description Function to query SIDE metadata that matches a named SIDE raster
-#'
+#' 
 #' @param side.raster any `raster*` object named with existing sideid(s) 
-#' @param side.metadata.df Meta data set of SIDE, results from `side_metadata()`. 
-#' You can speed up things a little bit, if you load that only once.
-sidemap2data <- function(side.raster, side.metadata.df = side_metadata()){
+#' 
+#' @return data.frame with the metadata for the bands of sider.raster.
+sidemap2data <- function(side.raster){
   # Need the raster package here..
   require(raster)
+  
+  # Load Metadata
+  side.metadata.df <- sidedata::side.metadata.df
   
   # Names of side raster stack
   query.names <- names(side.raster)
