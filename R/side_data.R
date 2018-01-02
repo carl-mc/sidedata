@@ -20,6 +20,7 @@
 
 #' @title Load SIDE metadata
 #' @description Function to load meta data of the SIDE data set
+#' @export
 side_metadata <- function(){
   return(sidedata::side.metadata.df)
 }
@@ -50,6 +51,7 @@ side_metadata_codebook <- function(){
 #' @details Specify the subset of SIDE maps you want to download using the above parameters. 
 #' The inner join of all parameters determines which maps are downloaded.
 #' 
+#' @export
 side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(), 
                           dhs.round = c(), dhs.subround = c(), groupname = c(), marker = c(),
                           dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE){
@@ -158,11 +160,10 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
 #' must specify a subset of maps that is based on a single DHS round from one country and year.
 #' The inner join of all parameters determines which maps are loaded. 
 #' 
+#' @export
 side_load <- function(sideid = c(), mapid = NULL, country = NULL, 
                       year = NULL, dhs.round = NULL, dhs.subround = NULL, groupname = c(), marker = c(),
                       source.dir = getwd(), conv.hull = FALSE){
-  # Need the raster package here..
-  require(raster)
   
   # Load Metadata
   side.metadata.df <- sidedata::side.metadata.df
@@ -205,7 +206,7 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
     }
     
     # Load
-    stack <- stack(paste0(source.dir,"/",side.metadata.df$path))
+    stack <- raster::stack(paste0(source.dir,"/",side.metadata.df$path))
     
     # Name stack
     names(stack) <- side.metadata.df$sideid
@@ -215,7 +216,7 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
   } else { 
     # Load convex Hull
     path <- paste0(source.dir,"/conv_hull/side_v1_convhull_",unique(side.metadata.df$mapid),".asc")
-    raster <- try(raster(path))
+    raster <- try(raster::raster(path))
     if(class(raster) == "try-error"){
       stop(paste0("Convex hull raster not found at: ",path) )
     } else {
@@ -232,9 +233,9 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
 #' @param side.raster any `raster*` object named with existing sideid(s) 
 #' 
 #' @return data.frame with the metadata for the bands of sider.raster.
+#' 
+#' @export
 sidemap2data <- function(side.raster){
-  # Need the raster package here..
-  require(raster)
   
   # Load Metadata
   side.metadata.df <- sidedata::side.metadata.df
