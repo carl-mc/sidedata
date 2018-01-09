@@ -34,17 +34,17 @@ side_metadata_codebook <- function(){
 
 #' @title Download a set of SIDE maps
 #'
-#' @description Facilitates bulk-download of SIDE data from \url{icr.ethz.ch/side}.
+#' @description Facilitates bulk-download of SIDE data from \url{icr.ethz.ch/data/side}.
 #' 
-#' @param sideid Vector of sideid as listed in `side_metadata()`. 
-#' @param mapid Vector of mapid as listed in `side_metadata()`. 
-#' @param country Vector of country names as specified in `side_metadata()`
-#' @param year Vector of country codes as specified in `side_metadata()`
-#' @param dhs.round Vector of DHS rounds as specified in `side_metadata()`
-#' @param dhs.subround Vector of DHS subrounds as specified in `side_metadata()`
-#' @param groupname Vector of group names as specified in `side_metadata()`
-#' @param marker Type of group; one of `c("ethnic","religion","ethnic.religion")`
-#' @param dest.dir Destination directory. If `conv.hull = TRUE`, a subdirectory `dest.dir/conv_hull/` will be created in which raster files of the convex hulls are saved. 
+#' @param sideid Vector of sideid as listed in \code{side_metadata()}. 
+#' @param mapid Vector of mapid as listed in \code{side_metadata()}. 
+#' @param country Vector of country names as specified in \code{side_metadata()}. 
+#' @param year Vector of country codes as specified in \code{side_metadata()}. 
+#' @param dhs.round Vector of DHS rounds as specified in \code{side_metadata()}. 
+#' @param dhs.subround Vector of DHS subrounds as specified in \code{side_metadata()}. 
+#' @param groupname Vector of group names as specified in \code{side_metadata()}. 
+#' @param marker Type of group; one of \code{c("ethnic","religion","ethnic.religion")}
+#' @param dest.dir Destination directory. If \code{conv.hull = TRUE}, a subdirectory \code{"dest.dir/conv_hull/"} will be created in which raster files of the convex hulls are saved. 
 #' @param overwrite Overwrite existing SIDE Data
 #' @param conv.hull Download convex hull of DHS points used for interpolation?
 #' 
@@ -92,27 +92,28 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     print(paste0("Overwriting ",length(exist)," files..."))
   }
   
-  # Print number of downloads:
+  # Download
   if(nrow(side.metadata.df) == 0){
     print("No files to download.")
-    return(FALSE)
+  } else {
+    print(paste0("Downloading ", nrow(side.metadata.df), " SIDE maps from icr.ethz.ch/data/side/raw/v1/"))
+    
+    # Make Progress Bar
+    pb <- txtProgressBar(min = 0, max = length(side.metadata.df$path), style = 3)
+    
+    # Download
+    res <- lapply(1:length(side.metadata.df$path), function(f){
+      r <- download.file(url = paste0(server.url, side.metadata.df$path[f]),
+                         destfile = paste0(dest.dir,"/", side.metadata.df$path[f]),
+                         quiet = T)
+      setTxtProgressBar(pb, f)
+      return(r)
+    })
+    
+    # Close progress bar
+    close(pb)
   }
-  print(paste0("Downloading ", nrow(side.metadata.df), " SIDE maps from icr.ethz.ch/data/side/raw/v1/"))
   
-  # Make Progress Bar
-  pb <- txtProgressBar(min = 0, max = length(side.metadata.df$path), style = 3)
-  
-  # Download
-  res <- lapply(1:length(side.metadata.df$path), function(f){
-    r <- download.file(url = paste0(server.url, side.metadata.df$path[f]),
-                  destfile = paste0(dest.dir,"/", side.metadata.df$path[f]),
-                  quiet = T)
-    setTxtProgressBar(pb, f)
-    return(r)
-  })
-  
-  # Close progress bar
-  close(pb)
   
   # Download convex hull
   if(conv.hull){
@@ -122,7 +123,9 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     pb <- txtProgressBar(min = 0, max = length(unique(side.metadata.df$mapid)), style = 3)
     
     # Download
-    dir.create(paste0(dest.dir,"/conv_hull"))
+    if(!dir.exists(paste0(dest.dir,"/conv_hull"))){
+      dir.create(paste0(dest.dir,"/conv_hull"))
+    }
     conv.hull.stub <- "conv_hull/side_v1_convhull_"
     res <- lapply(1:length(unique(side.metadata.df$mapid)), function(f){
       download.file(url = paste0(server.url,conv.hull.stub, unique(side.metadata.df$mapid)[f], ".asc"),
@@ -140,20 +143,20 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
 }
   
 
-#' @title Open a set of SIDE maps
+#' @title Load a set of SIDE maps into environment
 #'
 #' @description Facilitates the loading of SIDE data.
 #' 
 #' @param sideid Vector of sideid.
-#' @param mapid Single mapid as listed in `side_metadata()`. 
-#' @param country Single country
-#' @param year Single year
-#' @param dhs.round Single DHS round
-#' @param dhs.subround Single DHS subroud; needed if multiple DHS survey in the same country and survey wave
-#' @param groupname Name of group
-#' @param marker Type of group; one of `c("ethnic","religion","ethnic.religion")`
+#' @param mapid Single mapid as listed in \code{side_metadata()}. 
+#' @param country Single country as listed in \code{side_metadata()}. 
+#' @param year Single year as listed in \code{side_metadata()}. 
+#' @param dhs.round Single DHS round as listed in \code{side_metadata()}. 
+#' @param dhs.subround Single DHS subroud as listed in \code{side_metadata()}. ; needed if multiple DHS survey in the same country and survey wave
+#' @param groupname Name of group as listed in \code{side_metadata()}. 
+#' @param marker Type of group; one of \code{c("ethnic","religion","ethnic.religion")}
 #' @param source.dir Directory in which SIDE data is stored
-#' @param conv.hull Download convex hull of DHS points used for interpolation?
+#' @param conv.hull Load convex hull of DHS points used for interpolation?
 #' 
 #' @details Specify the subset of SIDE maps you want to load using the above parameters. 
 #' To guarantee that maps form a raster-stack, parameters 
@@ -230,9 +233,9 @@ side_load <- function(sideid = c(), mapid = NULL, country = NULL,
 #'
 #' @description Function to query SIDE metadata that matches a named SIDE raster
 #' 
-#' @param side.raster any `raster*` object named with existing sideid(s) 
+#' @param side.raster any Raster* object named with existing sideid(s) 
 #' 
-#' @return data.frame with the metadata for the bands of sider.raster.
+#' @return data.frame with the metadata for the bands of \code{side.raster}.
 #' 
 #' @export
 sidemap2data <- function(side.raster){
