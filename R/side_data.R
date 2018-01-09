@@ -1,7 +1,7 @@
 #' @title SIDE Data Package
 #' @description Facilitates access to the SIDE data.
 #' 
-#' @seealso \url{url-to-paper}; \url{https://github.com/carl-mc/sidedata}, \url{icr.ethz.ch/data/side}
+#' @seealso \url{https://side.ethz.ch}; \url{link-to-paper}; \url{https://github.com/carl-mc/sidedata}
 #'
 #' @author Carl Müller-Crepon and Philipp Hunziker
 #' @name sidedata
@@ -56,7 +56,7 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
                           dhs.round = c(), dhs.subround = c(), groupname = c(), marker = c(),
                           dest.dir = getwd(), overwrite = FALSE, conv.hull = FALSE){
   # Server url
-  server.url <- "icr.ethz.ch/data/side/raw/v1/"
+  server.url <- "https://side.ethz.ch/raw/v1/"
   
   # Destination directory
   dest.dir <- ifelse(substr(dest.dir, nchar(dest.dir),nchar(dest.dir)) == "/",
@@ -85,26 +85,27 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     exist <- exist[exist %in% side.metadata.df$path]
     if(length(exist) > 0){
       print(paste0(length(exist)," files already exist..."))
-      side.metadata.df <- side.metadata.df[!side.metadata.df$path %in% exist,]
+      main.metadata.df <- side.metadata.df[!side.metadata.df$path %in% exist,]
     }
   } else {
     exist <- exist[exist %in% side.metadata.df$path]
+    main.metadata.df <- side.metadata.df
     print(paste0("Overwriting ",length(exist)," files..."))
   }
   
   # Download
-  if(nrow(side.metadata.df) == 0){
+  if(nrow(main.metadata.df) == 0){
     print("No files to download.")
   } else {
-    print(paste0("Downloading ", nrow(side.metadata.df), " SIDE maps from icr.ethz.ch/data/side/raw/v1/"))
+    print(paste0("Downloading ", nrow(main.metadata.df), " SIDE maps from side.ethz.ch/raw/v1/"))
     
     # Make Progress Bar
-    pb <- txtProgressBar(min = 0, max = length(side.metadata.df$path), style = 3)
+    pb <- txtProgressBar(min = 0, max = length(main.metadata.df$path), style = 3)
     
     # Download
-    res <- lapply(1:length(side.metadata.df$path), function(f){
-      r <- download.file(url = paste0(server.url, side.metadata.df$path[f]),
-                         destfile = paste0(dest.dir,"/", side.metadata.df$path[f]),
+    res <- lapply(1:length(main.metadata.df$path), function(f){
+      r <- download.file(url = paste0(server.url, main.metadata.df$path[f]),
+                         destfile = paste0(dest.dir,"/", main.metadata.df$path[f]),
                          quiet = T)
       setTxtProgressBar(pb, f)
       return(r)
@@ -117,26 +118,61 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
   
   # Download convex hull
   if(conv.hull){
-    print(paste0("Downloading ",length(unique(side.metadata.df$mapid))," convex hull(s) from icr.ethz.ch/data/side/raw/v1/conv_hull/"))
     
-    # Make Progress Bar
-    pb <- txtProgressBar(min = 0, max = length(unique(side.metadata.df$mapid)), style = 3)
-    
-    # Download
-    if(!dir.exists(paste0(dest.dir,"/conv_hull"))){
-      dir.create(paste0(dest.dir,"/conv_hull"))
+    # Make Convex Hull directory
+    conv.dir <- paste0(dest.dir, "/conv_hull/")
+    if(!dir.exists(conv.dir)){
+      dir.create(conv.dir)
     }
-    conv.hull.stub <- "conv_hull/side_v1_convhull_"
-    res <- lapply(1:length(unique(side.metadata.df$mapid)), function(f){
-      download.file(url = paste0(server.url,conv.hull.stub, unique(side.metadata.df$mapid)[f], ".asc"),
-                    destfile = paste0(dest.dir,conv.hull.stub,"/", unique(side.metadata.df$mapid)[f], ".asc"))
-      setTxtProgressBar(pb, f)
-      return(r)
-    })
     
-    # Close progress bar
-    close(pb)
+    # File prefix
+    con.prefix <- "side_v1_convhull_"
+    
+    # Unique mapids 
+    uni.map.ids <- unique(side.metadata.df$mapid)
+    
+    # Files
+    conv.files <- paste0(con.prefix, uni.map.ids, ".asc")
+    
+    # Check whether already in dest.folder
+    exist <- list.files(conv.dir)
+    if(!overwrite){
+      exist <- exist[exist %in% conv.files]
+      if(length(exist) > 0){
+        print(paste0(length(exist)," convex hull(s) already exist..."))
+        conv.files <- conv.files[!conv.files%in% exist]
+      }
+    } else {
+      exist <- exist[exist %in% conv.files]
+      print(paste0("Overwriting ",length(exist)," convex hull(s)..."))
+    }
+    
+    # Downlaod
+    if(length(conv.files) > 0){
+      
+      # Message
+      print(paste0("Downloading ",length(conv.files)," convex hull(s) from https://side.ethz.ch/raw/v1/conv_hull/"))
+      
+      # Make Progress Bar
+      pb <- txtProgressBar(min = 0, max = length(conv.files), style = 3)
+      
+      # Download
+      conv.hull.stub <- "conv_hull/side_v1_convhull_"
+      res <- lapply(1:length(conv.files), function(f){
+        r <- download.file(url = paste0(server.url,"conv_hull/", conv.files[f]),
+                           destfile = paste0(conv.dir, conv.files[f]),
+                           quiet = T)
+        setTxtProgressBar(pb, f)
+        return(r)
+      })
+      
+      # Close progress bar
+      close(pb)
+    } else {
+      print("No convex hulls to download.")
+    }
   }
+    
   
   # Return
   return(TRUE)
@@ -247,9 +283,23 @@ sidemap2data <- function(side.raster){
   query.names <- names(side.raster)
   
   # Query data
-  meta.df <- do.call(rbind, lapply(query.names, 
-                                   function(n){side.metadata.df[side.metadata.df$sideid == n,]}))
-  
+  if(all(grepl("convhull",query.names))){
+    query.vars <- c("mapid", "cowcode", "year", "dhs.round", "dhs.subround", "sample.size", "fit.comb", "tps.par.knn", "tps.par.sphkm",
+                    "tps.par.knncut", "tps.par.unsurv", "tps.fit", "knn.par.knn", "knn.par.sphkm", "knn.par.weights", "knn.par.unsurv", 
+                    "knn.par.knncut", "knn.fit")
+    meta.df <- do.call(rbind, lapply(query.names, 
+                                     function(n){
+                                       unique(side.metadata.df[side.metadata.df$mapid == as.numeric(strsplit(n, "_", fixed = T)[[1]][4]),query.vars])
+                                     }))
+    
+  } else if(all(!grepl("convhull",query.names))){
+    meta.df <- do.call(rbind, lapply(query.names, 
+                                     function(n){side.metadata.df[side.metadata.df$sideid == n,]}))
+    
+  } else {
+    stop("Please check proper naming of raster bands. Also, do not mix group rasters and convex hulls for this query.")
+  }
+
   # Return
   return(meta.df)
 }
