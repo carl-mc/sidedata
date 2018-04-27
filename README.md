@@ -56,7 +56,7 @@ head(uga.ethnic.meta.df)
 names(uga.ethnic) <- uga.ethnic.meta.df$groupname
 
 # ... convex hull of points
-uga.convhull <- side_load(country = "Uganda", year = 2010, marker = "ethnic", source.dir = "~/Data/side_v1",
+uga.convhull <- side_load(country = "Uganda", year = 2010, marker = "ethnic", source.dir = getwd(),
                           conv.hull = TRUE)
 plot(uga.convhull)
 ```
