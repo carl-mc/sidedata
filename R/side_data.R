@@ -85,8 +85,8 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     exist <- exist[exist %in% side.metadata.df$path]
     if(length(exist) > 0){
       print(paste0(length(exist)," files already exist..."))
-      main.metadata.df <- side.metadata.df[!side.metadata.df$path %in% exist,]
     }
+    main.metadata.df <- side.metadata.df[!side.metadata.df$path %in% exist,]
   } else {
     exist <- exist[exist %in% side.metadata.df$path]
     main.metadata.df <- side.metadata.df
