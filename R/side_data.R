@@ -76,6 +76,11 @@ side_download <- function(sideid = c(), mapid = c(), country = c(), year = c(),
     }
   }
   
+  # Check whether any such map exists
+  if(nrow(side.metadata.df) == 0){
+   error("No such map exists") 
+  } 
+  
   # Make path
   side.metadata.df$path <- paste0(side.metadata.df$sideid, ".asc")
   
