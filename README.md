@@ -41,7 +41,8 @@ library(sidedata)
 library(raster)
   
 # Download SIDE Data for ethnic Groups in Uganda 2010
-side_download(country = "Uganda", year = 2010, marker = "ethnic", dest.dir = getwd())
+side_download(country = "Uganda", year = 2010, marker = "ethnic", dest.dir = getwd(), conv.hull = T)
+
 ```
 
 Load SIDE Data for ethnic groups in Uganda 2010
@@ -63,30 +64,35 @@ plot(uga.convhull)
 
 Population-weighted aggregation to some spatial unit
 ```r
-# ... spatial units
-library(maptools)
-units.shp <- readShapePoly("your.uganda.units.shp")
-  
-# ... population raster
-pop.raster <- raster("your.pop.raster.asc")
+# ... spatial units 
+#     Adm 1 units from the GADM Database: https://gadm.org/download_country_v3.html
+library(sp)
+gadm.uga.adm1.url <- "https://biogeo.ucdavis.edu/data/gadm3.6/Rsp/gadm36_UGA_1_sp.rds"
+units.shp <- readRDS(gzcon(url(gadm.uga.adm1.url)))
+plot(units.shp)
 
-# ... align rasters
-pop.raster <- raster::crop(pop.raster, extent(uga.ethnic))
-pop.raster <- raster::resample(pop.raster, uga.ethnic)
+# ... population raster: for demonstration only, assume every raster cell has a random population between 1 and 1000)
+##     for real population values: 
+##     pop.raster <- raster("your.pop.raster.asc")
+##     and allign raster therefater with raster::crop() and raster::resample()
+pop.raster <- raster(ext = extent(uga.ethnic), res = res(uga.ethnic))
+pop.raster <- setValues(pop.raster, sample(c(1:100), size = ncell(uga.ethnic), replace = T))
+plot(pop.raster) ## random population ...
 
 # ... compute group counts
 uga.ethnic.counts <- uga.ethnic*pop.raster
 names(uga.ethnic.counts) <- names(uga.ethnic)
-  
-  
+
 # ... aggregate to unit level
-uga.ethnic.agg <- raster::aggregate(uga.ethnic.counts, units.shp, fun = sum)
-colnames(uga.ethnic.meta.df) <- names(uga.ethnic)
+uga.ethnic.agg <- raster::extract(uga.ethnic.counts, units.shp, fun = sum, na.rm = T)
+colnames(uga.ethnic.agg) <- names(uga.ethnic)
 
 # ... convert back to proportions
-uga.ethnic.meta.df <- uga.ethnic.meta.df / rowSums(uga.ethnic.meta.df)
+uga.ethnic.agg <- uga.ethnic.agg / rowSums(uga.ethnic.agg)
 
 # ... plot proportion of Baganda per spatial unit
 plot(units.shp, 
-     col = gray(uga.ethnic.meta.df[,"baganda"]))
+     col = gray(uga.ethnic.agg[,"baganda"]))
+
+
 ```
