@@ -74,7 +74,7 @@ plot(units.shp)
 # ... population raster: for demonstration only, assume every raster cell has a random population between 1 and 1000)
 ##     for real population values: 
 ##     pop.raster <- raster("your.pop.raster.asc")
-##     and allign raster therefater with raster::crop() and raster::resample()
+##     and allign raster thereafter with raster::crop() and raster::resample()
 pop.raster <- raster(ext = extent(uga.ethnic), res = res(uga.ethnic))
 pop.raster <- setValues(pop.raster, sample(c(1:100), size = ncell(uga.ethnic), replace = T))
 plot(pop.raster) ## random population ...
