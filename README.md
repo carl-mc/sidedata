@@ -20,7 +20,7 @@ Citation
 ------------
 When using this dataset in your research, please include the following reference:
 
-Müller-Crepon, Carl & Philipp Hunziker. (2018). <a href="https://icr.ethz.ch/publications/spatial-data-on-ethnicity/" target="_blank">New Spatial Data on Ethnicity: Introducing SIDE.</a> <i>Journal of Peace Research</i>, forthcoming.
+Müller-Crepon, Carl & Philipp Hunziker. (2018). <a href="https://icr.ethz.ch/publications/spatial-data-on-ethnicity/" target="_blank">New Spatial Data on Ethnicity: Introducing SIDE.</a> <i>Journal of Peace Research, 55</i>(5), 687-698
 
 Installation
 ------------
